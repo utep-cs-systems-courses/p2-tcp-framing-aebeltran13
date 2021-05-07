@@ -59,14 +59,40 @@ while True:
         #Check if file exists
         if os.path.exists(filePath):
             print("Sending %s" % fileName)
+            
+            #Framing file name
+            fnLength = str(len(fileName)) + ":"
+            fnLengthByte = bytearray(fnLength.encode())
+            message = fnLengthByte + bytearray(fileName.encode())
+            while len(message):
+                sent = s.send(message)
+                message = message[sent:]
+
+            #Wait for server response to check if file exists
+            reply = s.recv(100).decode()
+            #File already exists. Server said NO
+            if reply == "N":
+                print("File already exists")
+                continue
+            #Server did not say Yes or No so it is an unknown response. Exit
+            elif reply != "Y":
+                print("Unknown response")
+                continue
+
+            #Server reponse was yes so we send rest of data.
             file = open(filePath, "r")
             data = file.read()
             #Check for empty file
             if(len(data) == 0):
                 print("File is Empty!")
                 continue
-            outMessage = fileName + ":;:" + data
-            s.send(outMessage.encode())
+            dataLengthByte = bytearray((str(len(data)) + ":").encode()) 
+            message = dataLengthByte + bytearray(data.encode())
+            while len(message):
+                sent = s.send(message)
+                message = message[sent:]
+            
+
         else:
             print("File not found...")
             continue
